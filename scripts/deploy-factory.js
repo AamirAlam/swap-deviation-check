@@ -8,6 +8,10 @@ async function main() {
   const deployedContract = await contractFactory.deploy(owner.address);
 
   console.log(`deployed UniswapV2Factory   at: ${deployedContract.address}`);
+  // const contract = contractFactory.attach(deployedContract.address);
+
+  // const inithash = await contract.INIT_CODE_HASH();
+  // console.log("init code hash ", inithash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

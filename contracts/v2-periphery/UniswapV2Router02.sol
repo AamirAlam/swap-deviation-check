@@ -4,6 +4,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import './interfaces/IUniswapV2Router02.sol';
+import './interfaces/IAPI3ProxyReader.sol';
 import './libraries/UniswapV2Library.sol';
 import './libraries/SafeMath.sol';
 import './interfaces/IERC20.sol';
@@ -14,15 +15,17 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
 
     address public immutable override factory;
     address public immutable override WETH;
+    address public immutable  proxyReader;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'UniswapV2Router: EXPIRED');
         _;
     }
 
-    constructor(address _factory, address _WETH) public {
+    constructor(address _factory, address _WETH, address _proxyReader) public {
         factory = _factory;
         WETH = _WETH;
+        proxyReader = _proxyReader;
     }
 
     receive() external payable {
@@ -221,6 +224,60 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
             );
         }
     }
+
+
+        // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
+    function getOraclePrice(address[] memory path ) public view  returns (uint256 oraclePrice) {
+       
+            (int224 token0PriceUSD, ) = IAPI3ProxyReader(proxyReader).readDataFeed(path[0]);
+            (int224 token1PriceUSD, ) = IAPI3ProxyReader(proxyReader).readDataFeed(path[1]);
+
+            oraclePrice = uint256(token0PriceUSD).mul(100000000)/uint256(token1PriceUSD)  ;
+
+    }
+
+
+
+     // retuns a positive value of percent change
+    function priceDeviationPercent(uint256 oldValue, uint256 newValue) public pure returns (int256) {
+        require(oldValue > 0, "Old value must be greater than zero");
+
+        // Calculate the percent change
+        int256 percentChange =  newValue > oldValue ? int256(newValue) * 100 / int256(oldValue) - 100 : int256(oldValue) * 100 / int256(newValue) - 100;
+
+        return percentChange;
+    }
+
+    // test function to debug intermediate calculations
+    function amountDeviationTest2( uint amountIn,
+        address[] memory path
+      ) public view   returns (uint outputAmount, uint oracleExpectedOutput) {
+        
+            uint[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
+             outputAmount = amounts[amounts.length - 1];
+
+            uint256 oraclePrice = getOraclePrice(path);
+            uint inputDecimals =  IERC20(path[0]).decimals();
+            oracleExpectedOutput = ( amountIn / inputDecimals ) .mul(oraclePrice / 100000000).mul(1000000000000000000);
+        }
+
+    // test function to debug deviation values
+    function priceDeviationTest( uint amountIn,
+        address[] memory path
+      ) public view   returns (int256 deviation, uint256 oraclePrice, uint256 outputAmount, uint256 oracleExpectedOutput) {
+        
+            uint[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
+                //output tokens based on lp product formula
+            outputAmount = amounts[amounts.length - 1];
+    
+            oraclePrice = getOraclePrice(path);
+            uint inputDecimals =  IERC20(path[0]).decimals();
+            oracleExpectedOutput = ( amountIn / inputDecimals ) .mul(oraclePrice / 100000000).mul(1000000000000000000);
+
+            deviation =   priceDeviationPercent(outputAmount, oracleExpectedOutput);
+        }
+
+
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
@@ -228,8 +285,22 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+        // out amounts for given input token, [token0Out, token1Out]
         amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        uint256 outputAmount = amounts[amounts.length - 1];
+
+        // price deviation check before swap
+        // uint oraclePrice = getOraclePrice(path);
+        // uint inputDecimals =  IERC20(path[0]).decimals();
+        // uint oracleExpectedOutput = ( amountIn / inputDecimals ) .mul(oraclePrice / 100000000).mul(1000000000000000000);
+
+        // int deviation =   priceDeviationPercent(outputAmount, oracleExpectedOutput);
+
+        // require(deviation < 20, "Price deviation is more than 20%" );
+
+
+
+        require(outputAmount >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );

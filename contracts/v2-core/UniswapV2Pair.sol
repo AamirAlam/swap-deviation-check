@@ -26,7 +26,6 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     uint public price0CumulativeLast;
     uint public price1CumulativeLast;
     uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
-    mapping (address => address) public tokenProxies;
  
     address constant public manager = 0x8BD0e959E9a7273D465ac74d427Ecc8AAaCa55D8;
 
@@ -204,13 +203,4 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
 
-
-
-    // update token proxies, only manager accesss
-    function updateProxies(address _token0Proxy, address _token1Proxy) external lock {
-        require(msg.sender == manager , "Not a manager" );
-        tokenProxies[token0] = _token0Proxy;
-        tokenProxies[token1] = _token1Proxy;
-
-    }
 }
