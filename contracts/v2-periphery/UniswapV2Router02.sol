@@ -251,14 +251,15 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
     // test function to debug intermediate calculations
     function amountDeviationTest2( uint amountIn,
         address[] memory path
-      ) public view   returns (uint outputAmount, uint oracleExpectedOutput) {
+      ) public view   returns (uint outputAmount, uint oracleExpectedOutput, uint inputDecimals) {
         
             uint[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
              outputAmount = amounts[amounts.length - 1];
 
             uint256 oraclePrice = getOraclePrice(path);
-            uint inputDecimals =  IERC20(path[0]).decimals();
-            oracleExpectedOutput = ( amountIn / inputDecimals ) .mul(oraclePrice / 100000000).mul(1000000000000000000);
+            inputDecimals =  IERC20(path[0]).decimals();
+           
+            oracleExpectedOutput =  (amountIn  * oraclePrice * 10**18) / (10 ** inputDecimals * 10 ** 8);
         }
 
     // test function to debug deviation values
@@ -272,7 +273,7 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
     
             oraclePrice = getOraclePrice(path);
             uint inputDecimals =  IERC20(path[0]).decimals();
-            oracleExpectedOutput = ( amountIn / inputDecimals ) .mul(oraclePrice / 100000000).mul(1000000000000000000);
+            oracleExpectedOutput =     oracleExpectedOutput =  (amountIn  * oraclePrice * 10**18) / (10 ** inputDecimals * 10 ** 8);
 
             deviation =   priceDeviationPercent(outputAmount, oracleExpectedOutput);
         }
@@ -292,7 +293,7 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         // price deviation check before swap
         // uint oraclePrice = getOraclePrice(path);
         // uint inputDecimals =  IERC20(path[0]).decimals();
-        // uint oracleExpectedOutput = ( amountIn / inputDecimals ) .mul(oraclePrice / 100000000).mul(1000000000000000000);
+        // uint oracleExpectedOutput =  (amountIn  * oraclePrice * 10**18) / (10 ** inputDecimals * 10 ** 8);
 
         // int deviation =   priceDeviationPercent(outputAmount, oracleExpectedOutput);
 

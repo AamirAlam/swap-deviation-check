@@ -1,12 +1,12 @@
 const hre = require("hardhat");
 
 async function main() {
-  const factoryAddress = "0x80c759B79878a22022C366871AE05a2D1D10Ec1B";
+  const factoryAddress = "0xE26a086959C2cf9221E564D2e01Ac5EB1C6CfC4c";
   const wethAddress = "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6";
   const proxyReader = "0xCF63299e788343A7431AE7428593EEc5560BE93F";
   const params = [factoryAddress, wethAddress, proxyReader];
 
-  const routerAddress = "0x637CcE1E3ca5C89686325a8c15932a754989e85f";
+  const routerAddress = "0xF4F761672d8B7a4BdC141261DB3B48b16a5CAf6C";
 
   await hre.run("verify:verify", {
     address: routerAddress,
