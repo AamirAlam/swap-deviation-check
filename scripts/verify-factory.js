@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 async function main() {
   const owner = await ethers.getSigner();
   const params = [owner.address];
-  const factoryAddress = "0xE26a086959C2cf9221E564D2e01Ac5EB1C6CfC4c";
+  const factoryAddress = "0xDd2183623973093F149000Be20224056d68ADD5a";
 
   await hre.run("verify:verify", {
     address: factoryAddress,
